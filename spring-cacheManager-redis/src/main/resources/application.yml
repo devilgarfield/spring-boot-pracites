@@ -1,0 +1,18 @@
+spring:
+  redis:
+    port: 6379
+    lettuce:
+      pool:
+        enabled: true
+        time-between-eviction-runs: 2000 #单位毫秒
+    host: 192.168.0.96
+  aop:
+    proxy-target-class: false #尼玛源码傻逼？？ 默认用cglib具体强制走cglib的逻辑看ClassProxyingConfiguration
+management:
+  endpoints:
+    web:
+      base-path: /ac
+      exposure:
+        include: "*"
+debug: true
+

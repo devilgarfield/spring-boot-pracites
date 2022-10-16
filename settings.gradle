@@ -1,0 +1,3 @@
+rootProject.name = 'spring-boot-practices'
+include 'spring-cacheManager-redis'
+

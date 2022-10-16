@@ -1,0 +1,13 @@
+plugins {
+    id 'java'
+}
+
+group 'org.study'
+version '1.0-SNAPSHOT'
+
+/*subprojects {
+    apply plugin: 'java'
+    dependencies {
+        implementation 'org.projectlombok:lombok:1.18.24'
+    }
+}*/
