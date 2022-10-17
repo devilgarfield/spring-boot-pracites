@@ -42,3 +42,4 @@ bin/
 .DS_Store
 /.idea/
 /spring-cacheManager-redis/logs/
+/logs/

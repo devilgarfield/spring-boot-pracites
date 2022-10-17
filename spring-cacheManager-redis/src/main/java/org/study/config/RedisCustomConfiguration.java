@@ -11,7 +11,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
@@ -23,16 +23,30 @@ public class RedisCustomConfiguration {
      */
     @Bean
     public RedisCacheConfiguration cacheConfiguration() {
+        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = getJsonRedisSerializer();
+
+        return RedisCacheConfiguration.defaultCacheConfig()
+                                      .serializeKeysWith(
+                                              SerializationPair.fromSerializer(new StringRedisSerializer()))
+                                      .serializeValuesWith(
+                                              SerializationPair.fromSerializer(jackson2JsonRedisSerializer))
+                                      .disableCachingNullValues();
+    }
+
+    private static Jackson2JsonRedisSerializer<Object> getJsonRedisSerializer() {
         Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(
                 Object.class);
         jackson2JsonRedisSerializer.setObjectMapper(getObjectMapper());
+        return jackson2JsonRedisSerializer;
+    }
 
-        return RedisCacheConfiguration.defaultCacheConfig().serializeKeysWith(
-                                              RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                                      .serializeValuesWith(
-                                              RedisSerializationContext.SerializationPair.fromSerializer(
-                                                      jackson2JsonRedisSerializer))
-                                      .disableCachingNullValues();
+    private static ObjectMapper getObjectMapper() {
+        // 如果直接使用Jackson2JsonRedisSerializer 获取存储的对象则会变为LinkedHashMap,添加ObjectMapper可解决
+        ObjectMapper om = new ObjectMapper();
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+        om.activateDefaultTyping(om.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL,
+                                 JsonTypeInfo.As.PROPERTY);
+        return om;
     }
 
   /*  @Bean  LettuceConnectionFactory  引入commons-pool2 jar包的话
@@ -45,10 +59,7 @@ public class RedisCustomConfiguration {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-
-        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(
-                Object.class);
-        jackson2JsonRedisSerializer.setObjectMapper(getObjectMapper());
+        Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer = getJsonRedisSerializer();
         template.setValueSerializer(jackson2JsonRedisSerializer);
 
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
@@ -56,15 +67,8 @@ public class RedisCustomConfiguration {
 
         template.setHashKeySerializer(stringRedisSerializer);
         template.setHashValueSerializer(jackson2JsonRedisSerializer);
-        return template;
-    }
 
-    private static ObjectMapper getObjectMapper() {
-        // 如果直接使用Jackson2JsonRedisSerializer 获取存储的对象则会变为LinkedHashMap,添加ObjectMapper可解决
-        ObjectMapper om = new ObjectMapper();
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        om.activateDefaultTyping(om.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL,
-                                 JsonTypeInfo.As.PROPERTY);
-        return om;
+        template.afterPropertiesSet();
+        return template;
     }
 }
