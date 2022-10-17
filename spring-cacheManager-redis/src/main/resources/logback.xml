@@ -1,5 +1,21 @@
+<!--
+    1.debug="true" :To see debug information as Logback processes the configuration,
+                 we can turn on debug logging;
+    2.Reloading Configuration Automatically
+           a.Reloading logging configuration
+                <configuration scan="true">
+                  ...
+                </configuration>
+           The default behavior is to scan the configuration file for changes every 60 seconds.
+           b.We can modify this interval by adding scanPeriod
+                <configuration scan="true" scanPeriod="15 seconds">
+                  ...
+                </configuration>
+             We can specify scanPeriod values in milliseconds, seconds, minutes, or hours.
+-->
 <configuration debug="false">
     <!-- 控制台输出 -->
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
@@ -8,23 +24,54 @@
     </appender>
 
     <!-- 文件保存日志的相关配置 -->
-    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/cacheable_info.log</file>
+    <property name="LOG_DIR" value="logs"/>
+    <appender name="INFO_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/cacheable_info.log</file>
+
+        <!--The <append> tag instructs the Appender to append to an existing file rather than truncating it-->
+        <append>true</append>
+
+        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n</pattern>
         </encoder>
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>INFO</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
-        </filter>
+
+        <!-- reference https://www.baeldung.com/logback#3-rollingfileappender -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/cacheable_info.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!--reference https://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy
+            fileNamePattern tables -->
+            <fileNamePattern>${LOG_DIR}/cacheable_info.%d{yyyy-MM-dd}.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
         </rollingPolicy>
     </appender>
-    <appender name="error" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/cacheable_error.log</file>
+
+    <!--
+            1.As below, we set the level of the root logger and associated it with the console Appender.
+        We can set the level for any logger(code package)
+            2.setting the level of our Loggers programmatically,like below code block;
+                Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.xxx.foobar");
+                logger.setLevel(Level.INFO);
+            3.By not setting the level of our Loggers programmatically, the configuration sets them
+        inherits DEBUG from the root logger
+            4.Loggers also inherit the appender-ref from the root logger.
+            5.If we re-run our test, log messages from "org.study.service" go to both the console and to a
+        file named cacheable_info.log. The descendant logger inherits the root logger's association with the
+        ConsoleAppender with its association(关联) with FileAppender. Appenders are cumulative(积累的).
+        We can disable it by setting attribute additivity="false", that makes log message only go to file,
+        and neither will any of its descendants.
+    -->
+    <logger name="org.study.service" level="INFO" additivity="true">
+        <appender-ref ref="INFO_LOG"/>
+    </logger>
+
+
+    <!-- Custom Appender  reference https://www.baeldung.com/logback#4-custom-appenders-->
+    <appender name="ERROR_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/cacheable_error.log</file>
+        <!--The <append> tag instructs the Appender to append to an existing file rather than truncating(截取)
+        it-->
+        <append>true</append>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n</pattern>
         </encoder>
@@ -34,25 +81,14 @@
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/cacheable_error.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_DIR}/cacheable_error.%d{yyyy-MM-dd}.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
     </appender>
 
-    <!--myibatis log configure -->
-<!--    <logger name="org.apache.http" level="INFO" />
-    <logger name="com.apache.ibatis" level="TRACE" />
-    <logger name="java.sql.Connection" level="DEBUG" />
-    <logger name="java.sql.Statement" level="DEBUG" />
-    <logger name="java.sql.PreparedStatement" level="DEBUG" />-->
-
-    <!--  log configure -->
-    <logger name="org.study" level="DEBUG" />
-
     <!-- 日志输出级别 -->
-    <root level="INFO">
-        <appender-ref ref="STDOUT" />
-        <appender-ref ref="file" />
-        <appender-ref ref="error" />
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ERROR_LOG"/>
     </root>
 </configuration>
