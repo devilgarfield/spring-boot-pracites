@@ -37,6 +37,10 @@
         </encoder>
 
         <!-- reference https://www.baeldung.com/logback#3-rollingfileappender -->
+        <!--TimeBasedPolicy isn't our only option for rolling files.
+            SizeAndTimeBasedRollingPolicy, which will roll based on current log file size as well as time.
+            FixedWindowRollingPolicy, which rolls log file names each time the logger is started.
+        -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!--reference https://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy
             fileNamePattern tables -->
