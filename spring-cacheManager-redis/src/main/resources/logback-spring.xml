@@ -42,8 +42,11 @@
             FixedWindowRollingPolicy, which rolls log file names each time the logger is started.
         -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!--reference https://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy
-            fileNamePattern tables -->
+            <!--
+                We defined a fileNamePattern inside the RollingPolicy. This pattern defines not just the name
+                of files, but also how often to roll them
+             reference https://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy
+             -->
             <fileNamePattern>${LOG_DIR}/cacheable_info.%d{yyyy-MM-dd}.gz</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>3GB</totalSizeCap>
@@ -56,8 +59,8 @@
             2.setting the level of our Loggers programmatically,like below code block;
                 Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.xxx.foobar");
                 logger.setLevel(Level.INFO);
-            3.By not setting the level of our Loggers programmatically, the configuration sets them
-        inherits DEBUG from the root logger
+            3.By not setting the level of our Loggers programmatically or via configuration, the configuration
+            sets them inherits from its closest ancestor logger. [here from the root logger]
             4.Loggers also inherit the appender-ref from the root logger.
             5.If we re-run our test, log messages from "org.study.service" go to both the console and to a
         file named cacheable_info.log. The descendant logger inherits the root logger's association with the
@@ -76,9 +79,23 @@
         <!--The <append> tag instructs the Appender to append to an existing file rather than truncating(截取)
         it-->
         <append>true</append>
+
+        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
         <encoder>
+            <!--An exhaustive list of conversion words and format modifiers can be found here.
+                reference https://logback.qos.ch/manual/layouts.html#conversionWord
+            -->
             <pattern>%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n</pattern>
         </encoder>
+
+        <!-- Or use a custom layout to transforming an incoming event into a String
+
+              public class MySampleLayout extends LayoutBase<ILoggingEvent>{ ... }
+
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="chapters.layouts.MySampleLayout" />
+                </encoder>
+          -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
@@ -91,6 +108,7 @@
     </appender>
 
     <!-- 日志输出级别 -->
+    <!--This tag sets the root logger to DEBUG mode, and associates its output with the relevant Appenders-->
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="ERROR_LOG"/>
