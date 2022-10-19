@@ -14,5 +14,6 @@ management:
       base-path: /ac
       exposure:
         include: "*"
-debug: true
-
+logging:
+  file:
+    name: logs/cacheable.log

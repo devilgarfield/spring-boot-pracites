@@ -1,0 +1,116 @@
+<!--
+    1.debug="true" :To see debug information as Logback processes the configuration,
+                 we can turn on debug logging;
+    2.Reloading Configuration Automatically
+           a.Reloading logging configuration
+                <configuration scan="true">
+                  ...
+                </configuration>
+           The default behavior is to scan the configuration file for changes every 60 seconds.
+           b.We can modify this interval by adding scanPeriod
+                <configuration scan="true" scanPeriod="15 seconds">
+                  ...
+                </configuration>
+             We can specify scanPeriod values in milliseconds, seconds, minutes, or hours.
+-->
+<configuration debug="false">
+    <!-- 控制台输出 -->
+    <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 文件保存日志的相关配置 -->
+    <property name="LOG_DIR" value="logs"/>
+    <appender name="INFO_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/cacheable_info.log</file>
+
+        <!--The <append> tag instructs the Appender to append to an existing file rather than truncating it-->
+        <append>true</append>
+
+        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n</pattern>
+        </encoder>
+
+        <!-- reference https://www.baeldung.com/logback#3-rollingfileappender -->
+        <!--TimeBasedPolicy isn't our only option for rolling files.
+            SizeAndTimeBasedRollingPolicy, which will roll based on current log file size as well as time.
+            FixedWindowRollingPolicy, which rolls log file names each time the logger is started.
+        -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!--
+                We defined a fileNamePattern inside the RollingPolicy. This pattern defines not just the name
+                of files, but also how often to roll them
+             reference https://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy
+             -->
+            <fileNamePattern>${LOG_DIR}/cacheable_info.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+            1.As below, we set the level of the root logger and associated it with the console Appender.
+        We can set the level for any logger(code package)
+            2.setting the level of our Loggers programmatically,like below code block;
+                Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("com.xxx.foobar");
+                logger.setLevel(Level.INFO);
+            3.By not setting the level of our Loggers programmatically or via configuration, the configuration
+            sets them inherits from its closest ancestor logger. [here from the root logger]
+            4.Loggers also inherit the appender-ref from the root logger.
+            5.If we re-run our test, log messages from "org.study.service" go to both the console and to a
+        file named cacheable_info.log. The descendant logger inherits the root logger's association with the
+        ConsoleAppender with its association(关联) with FileAppender. Appenders are cumulative(积累的).
+        We can disable it by setting attribute additivity="false", that makes log message only go to file,
+        and neither will any of its descendants.
+    -->
+    <logger name="org.study.service" level="INFO" additivity="true">
+        <appender-ref ref="INFO_LOG"/>
+    </logger>
+
+
+    <!-- Custom Appender  reference https://www.baeldung.com/logback#4-custom-appenders-->
+    <appender name="ERROR_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/cacheable_error.log</file>
+        <!--The <append> tag instructs the Appender to append to an existing file rather than truncating(截取)
+        it-->
+        <append>true</append>
+
+        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <!--An exhaustive list of conversion words and format modifiers can be found here.
+                reference https://logback.qos.ch/manual/layouts.html#conversionWord
+            -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n</pattern>
+        </encoder>
+
+        <!-- Or use a custom layout to transforming an incoming event into a String
+
+              public class MySampleLayout extends LayoutBase<ILoggingEvent>{ ... }
+
+                <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                    <layout class="chapters.layouts.MySampleLayout" />
+                </encoder>
+          -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/cacheable_error.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 日志输出级别 -->
+    <!--This tag sets the root logger to DEBUG mode, and associates its output with the relevant Appenders-->
+    <root level="DEBUG">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ERROR_LOG"/>
+    </root>
+</configuration>
